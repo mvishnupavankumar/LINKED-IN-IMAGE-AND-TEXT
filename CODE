@@ -1,0 +1,409 @@
+{
+  "name": "LINKED IN IMAGE AND TEXT",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "N8N",
+        "formDescription": "FILL IT",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "FILES",
+              "fieldType": "file"
+            },
+            {
+              "fieldLabel": "IMAGES",
+              "fieldType": "file"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        -784,
+        -128
+      ],
+      "id": "4b839dbf-f75e-45f7-bfc7-b2d134cf0470",
+      "name": "On form submission",
+      "webhookId": "REPLACE_ME"
+    },
+    {
+      "parameters": {
+        "person": "REPLACE_ME",
+        "text": "={{ $json.post }}",
+        "shareMediaCategory": "IMAGE",
+        "binaryPropertyName": "IMAGES",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.linkedIn",
+      "typeVersion": 1,
+      "position": [
+        64,
+        176
+      ],
+      "id": "e9ee8b85-563a-4415-b09a-7134b0ffd696",
+      "name": "Create a post",
+      "credentials": {
+        "linkedInOAuth2Api": {
+          "id": "REPLACE_ME",
+          "name": "LinkedIn account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": " // Access binary object from the form submission\nconst binary = items[0].binary;\n\nif (!binary || Object.keys(binary).length === 0) {\n  throw new Error(\"No binary data found in the form submission.\");\n}\n\n// Get the first (or only) file key — usually the form field name like 'INFLUENCER'\nconst binaryKey = Object.keys(binary)[0];\nconst fileData = binary[binaryKey].data;\n\nif (!fileData) {\n  throw new Error(`No data found for binary property '${binaryKey}'`);\n}\n\n// Decode base64 and parse JSON\nconst fileBuffer = Buffer.from(fileData, 'base64');\nconst parsedJson = JSON.parse(fileBuffer.toString());\n\n// Output parsed JSON as result\nreturn [\n  {\n    json: parsedJson\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -560,
+        -128
+      ],
+      "id": "7c11ee57-35ee-48ef-a013-3236714f8428",
+      "name": "EXTRACT JSON"
+    },
+    {
+      "parameters": {
+        "jsCode": " const workflow = $json;\n\nconst prompt = `\nYou are a friendly explainer who helps anyone understand automation workflows, even if they don't know coding or technical terms.\n\nI will give you an n8n workflow JSON. \n\nYour job is to:\n\n### ✨ 1. Extract the MAIN PURPOSE\n- What is the workflow trying to do overall?\n- Explain it in one simple sentence anyone can understand.\n\n### ⚙️ 2. Step-by-step Explanation (No technical words)\nFor each step:\n- Say what that part **does** using plain language.\n- Explain **why it's useful** in the flow.\n- Avoid words like “node”, “parameter”, “function”, “API”, or “JSON”.\n\n### 🎯 3. Result\n- What happens when the whole workflow finishes?\n\nKeep everything short, clear, and beginner-friendly.\n\nUse this format for your output:\n\n---\n\n## ✨ What does this workflow do?\n\n→ [1 sentence description of the goal]\n\n---\n\n## 🧩 How it works (Step by Step):\n\n1. **Step Name:** [Plain language explanation of what happens]  \n   ➤ Why? [Why this is needed]\n\n2. **Step Name:** [Plain language explanation]  \n   ➤ Why? [Reason]\n\n...\n\n---\n\n## ✅ What happens at the end?\n\n→ [Final result that user sees or gets]\n\n---\n\nNow, here is the workflow to analyze:\n\n\\`\\`\\`json\n${JSON.stringify(workflow, null, 2)}\n\\`\\`\\`\n`;\n\nreturn [\n  {\n    json: {\n      contents: [\n        {\n          parts: [\n            {\n              text: prompt\n            }\n          ]\n        }\n      ]\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -336,
+        -128
+      ],
+      "id": "f55587c8-bc27-4ab6-8c82-86fb42f4490c",
+      "name": " MAKE PREETY WAY"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-goog-api-key",
+              "value": "YOUR_GOOGLE_GEMINI_API_KEY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json}}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -112,
+        -128
+      ],
+      "id": "9f523f28-8e37-4c6e-bb22-5f2891bee8b9",
+      "name": " SUMMARIZE IT"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b1f4d298-9c36-468b-bcc1-05c5d97cde8d",
+              "name": "MESSAGE",
+              "value": "={{ $json.body.candidates[0].content.parts[0].text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        112,
+        -128
+      ],
+      "id": "2bac3bd9-c3cc-4420-82ca-a6cf19a5469e",
+      "name": " EXTRACT DATA"
+    },
+    {
+      "parameters": {
+        "jsCode": "const message = $json.MESSAGE;\n\nconst prompt = `\nYou're Vishnu Marella Pavan Kumar, an AI enthusiast and tech learner.\n\nYour job is to write a LinkedIn post in Vishnu's personal style whenever you:\n\n- Complete a project, course, or certification\n- Launch or build a custom AI workflow or tool\n- Want to explain a technical process or break down a “GEM” you created\n\n🎯 Tone & Style:\n- Excited and motivational\n- Grateful but professional\n- Start with a bold hook like:\n  \"⏳ Tired of wasting time on [problem]? The solution is here…\"\n  \"⚡ This custom gem replaces hours of manual work—or even a full-time task!\"\n  \"🤖 Ever wondered how to turn technical JSON into storytelling content? I built something for that!\"\n- Use emojis in every bullet point\n- Use clean block format ready for copy-pasting into LinkedIn\n\n---\n\n### ✅ Input Format:\nSupports use cases like:\n- Project title, course name, or custom workflow/tool name\n- Bullet points about what was done, how it works, or who it's for\n- Takeaways or benefits\n- INCLUDE EMOJIS FOR EVERY BULLET POINT\n\n---\n\n### 🧠 Output Style:\nWrite a full LinkedIn post with:\n- Bold hook/headline to grab attention\n- Summary of what was built or achieved\n- Bullet breakdown of how it works or what it solves\n- Personal note about future impact or use\n- Gratitude to tools/platforms used\n- Add Vishnu-style hashtags\n- 🔁 MAIN POINT: Give output in a ready-to-copy block format\n\n---\n\n### 📌 Input:\n\nHighlights:\n${message}\n\n---\n\nNow generate the LinkedIn post:\n`;\n\nreturn [\n  {\n    json: {\n      contents: [\n        {\n          parts: [\n            {\n              text: prompt\n            }\n          ]\n        }\n      ]\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        336,
+        -128
+      ],
+      "id": "0ad1a8f7-fb6a-4eb7-a6b3-e54035a82945",
+      "name": "MAKE IN FORMAT"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-goog-api-key",
+              "value": "YOUR_GOOGLE_GEMINI_API_KEY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json}}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        560,
+        -128
+      ],
+      "id": "6767b5d7-3b94-4a10-ba51-8d68257dd12b",
+      "name": "MAKE POST TEXT"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body;\nconst candidates = body?.candidates ?? [];\n\nif (!candidates.length) {\n\treturn [{ json: { error: \"No candidates found in response\" } }];\n}\n\nlet text = candidates[0]?.content?.parts?.[0]?.text ?? \"No text found\";\n\n// Remove markdown triple-backticks if present\ntext = text.replace(/^```[\\s\\S]*?\\n/, '').replace(/```$/, '');\n\n// Align ✅ bullets to left margin\ntext = text.split('\\n').map(line => {\n\tif (line.trim().startsWith('✅')) {\n\t\treturn '✅ ' + line.trim().slice(1).trim(); // Ensure single space after ✅\n\t}\n\treturn line;\n}).join('\\n');\n\nreturn [\n\t{\n\t\tjson: {\n\t\t\tlinkedin_post: text.trim()\n\t\t}\n\t}\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        784,
+        -128
+      ],
+      "id": "37793ea9-4e51-4584-aa32-cec416b04916",
+      "name": " MAKE PREETY WAY1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ff171837-aa54-48c5-bf53-c066307b3478",
+              "name": "post",
+              "value": "={{ $json.linkedin_post }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1008,
+        -128
+      ],
+      "id": "889ecf68-385e-43b2-be28-ed370ffd9d0f",
+      "name": " EXTRACT DATA1"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -128,
+        96
+      ],
+      "id": "bb6176c7-7988-4a8f-97d8-729a3df28789",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "chatId": "REPLACE_ME",
+        "text": "DONE",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        272,
+        176
+      ],
+      "id": "e6ace441-a81b-439a-98c4-5b29ad2bbca7",
+      "name": "Send a text message",
+      "webhookId": "REPLACE_ME",
+      "credentials": {
+        "telegramApi": {
+          "id": "REPLACE_ME",
+          "name": "LINKEDIN"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "EXTRACT JSON": {
+      "main": [
+        [
+          {
+            "node": " MAKE PREETY WAY",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    " MAKE PREETY WAY": {
+      "main": [
+        [
+          {
+            "node": " SUMMARIZE IT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    " SUMMARIZE IT": {
+      "main": [
+        [
+          {
+            "node": " EXTRACT DATA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    " EXTRACT DATA": {
+      "main": [
+        [
+          {
+            "node": "MAKE IN FORMAT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MAKE IN FORMAT": {
+      "main": [
+        [
+          {
+            "node": "MAKE POST TEXT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MAKE POST TEXT": {
+      "main": [
+        [
+          {
+            "node": " MAKE PREETY WAY1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    " MAKE PREETY WAY1": {
+      "main": [
+        [
+          {
+            "node": " EXTRACT DATA1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    " EXTRACT DATA1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "EXTRACT JSON",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Create a post": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Create a post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "0cbc8fff-7bbf-43ae-a9af-b6d25c29630b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "REPLACE_ME"
+  },
+  "id": "REPLACE_ME",
+  "tags": []
+}
